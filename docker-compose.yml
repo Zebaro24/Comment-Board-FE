@@ -1,0 +1,7 @@
+services:
+  comment-board-fe:
+    build: .
+    container_name: comment-board-fe
+    restart: unless-stopped
+    ports:
+      - "3000:3000"

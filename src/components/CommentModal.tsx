@@ -1,10 +1,13 @@
 'use client';
 
-import {useState, useRef, ChangeEvent, FormEvent} from 'react';
+import {useState, useRef, ChangeEvent, FormEvent, useEffect} from 'react';
 import {CommentType} from '@/types';
 import {ModalWrapper, Input, Textarea, FileUpload, Button} from './ui';
 import {createComment} from '@/services/comments';
 import {CommentFormValues, validateCommentForm} from "@/utils/validators";
+import {getCaptcha} from '@/services/captcha';
+import Captcha from './ui/Captcha';
+import {AxiosError} from "axios";
 
 interface CommentModalProps {
     parentId?: number | null;
@@ -19,6 +22,19 @@ export default function CommentModal({parentId = null, onClose, onCommentAdded}:
     const [error, setError] = useState('');
     const [textError, setTextError] = useState('');
     const [preview, setPreview] = useState(false);
+    const [captchaImage, setCaptchaImage] = useState<string>('');
+    const [captchaKey, setCaptchaKey] = useState<string>('');
+    const [captchaValue, setCaptchaValue] = useState<string>('');
+
+    const loadCaptcha = async () => {
+        const { key, image } = await getCaptcha();
+        setCaptchaKey(key);
+        setCaptchaImage(image);
+    };
+
+    useEffect(() => {
+        loadCaptcha();
+    }, []);
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -85,11 +101,20 @@ export default function CommentModal({parentId = null, onClose, onCommentAdded}:
             if (parentId) formData.append('parent', String(parentId));
             files.forEach(file => formData.append('file', file));
 
+            formData.append('captcha', `${captchaKey}:${captchaValue}`);
+
             const created = await createComment(formData);
             onCommentAdded(created);
             onClose();
-        } catch (err) {
-            setError('Failed to send comment. Please try again.');
+        } catch (err: unknown) {
+            if (err instanceof AxiosError && err.response?.data) {
+                const messages = Object.entries(err.response.data)
+                    .map(([field, msg]) => `${field}: ${Array.isArray(msg) ? msg.join(', ') : msg}`)
+                    .join('. ');
+                setError(messages);
+            } else {
+                setError('Failed to send comment. Please try again.');
+            }
             console.error(err);
         } finally {
             setIsSubmitting(false);
@@ -148,6 +173,13 @@ export default function CommentModal({parentId = null, onClose, onCommentAdded}:
                 </div>
 
                 <FileUpload files={files} onChange={handleFileChange} onRemove={removeFile}/>
+
+                <Captcha
+                    image={captchaImage}
+                    value={captchaValue}
+                    onChange={setCaptchaValue}
+                    onRefresh={loadCaptcha}
+                />
 
                 {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 

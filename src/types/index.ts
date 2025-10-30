@@ -2,6 +2,7 @@ export interface FileType {
     id: number;
     file_type: 'image' | 'text';
     file: string;
+    file_content?: string;
     uploaded_at: string;
 }
 

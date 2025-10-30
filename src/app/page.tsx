@@ -1,20 +1,24 @@
 "use client"
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import CommentList from '../components/CommentList';
-import { CommentType } from '@/types';
-import CommentModal from "@/components/CommentModal";
-import {buildCommentTree} from "@/utils/buildCommentTree";
+import {useState, useEffect} from 'react';
+import {CommentList, CommentModal} from '@/components';
+import {CommentType} from '@/types';
+import {buildCommentTree} from '@/utils/buildCommentTree';
+import {Button} from '@/components/ui';
+import {getComments} from '@/services/comments';
 
 export default function Home() {
     const [comments, setComments] = useState<CommentType[]>([]);
     const [openModal, setOpenModal] = useState(false);
 
     useEffect(() => {
-        axios.get<CommentType[]>('http://127.0.0.1:8000/api/comments/').then(res => {
-            const tree = buildCommentTree(res.data);
-            setComments(tree);
-        });
+        getComments()
+            .then((data) => {
+                const tree = buildCommentTree(data);
+                setComments(tree);
+            })
+            .catch((err) => {
+                console.error('Failed to fetch comments', err);
+            });
     }, []);
 
     const handleCommentAdded = (newComment: CommentType) => {
@@ -23,12 +27,14 @@ export default function Home() {
 
     function flattenComments(tree: CommentType[]): CommentType[] {
         const flat: CommentType[] = [];
+
         function recurse(list: CommentType[]) {
             for (const c of list) {
-                flat.push({ ...c, replies: [] });
+                flat.push({...c, replies: []});
                 if (c.replies && c.replies.length) recurse(c.replies);
             }
         }
+
         recurse(tree);
         return flat;
     }
@@ -38,7 +44,7 @@ export default function Home() {
             <div className="max-w-3xl mx-auto">
                 <h1 className="text-3xl font-bold text-center mb-6">Comments</h1>
 
-                <CommentList comments={comments} onReplyAdded={handleCommentAdded} />
+                <CommentList comments={comments} onReplyAdded={handleCommentAdded}/>
 
                 {openModal && (
                     <CommentModal
@@ -47,12 +53,11 @@ export default function Home() {
                     />
                 )}
 
-                <button
-                    onClick={() => setOpenModal(true)}
-                    className="block mx-auto mb-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow"
-                >
-                    Leave a Comment
-                </button>
+                <div className="flex justify-center mb-6">
+                    <Button onClick={() => setOpenModal(true)} fullWidth={false} className="px-6">
+                        Leave a Comment
+                    </Button>
+                </div>
             </div>
         </div>
     );

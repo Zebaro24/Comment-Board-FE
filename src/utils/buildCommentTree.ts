@@ -4,7 +4,7 @@ export function buildCommentTree(comments: CommentType[]): CommentType[] {
     const map = new Map<number, CommentType>();
     const roots: CommentType[] = [];
 
-    comments.forEach(c => map.set(c.id, { ...c, replies: [] }));
+    comments.forEach(c => map.set(c.id, {...c, replies: []}));
 
     map.forEach(c => {
         if (c.parent) {

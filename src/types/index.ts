@@ -15,6 +15,6 @@ export interface CommentType {
     parent?: number | null;
     created_at: string;
     updated_at: string;
-    replies?: CommentType[];
-    files?: FileType[];
+    replies: CommentType[];
+    files: FileType[];
 }
